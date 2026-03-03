@@ -1,6 +1,6 @@
 let urenData = JSON.parse(localStorage.getItem('urenData')) || [];
 let currentUser = null;
-let editingId = null; // Houdt bij of we een bestaande entry bewerken
+let editingId = null;
 
 // Toon huidige datum
 document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -85,21 +85,16 @@ function checkUren() {
     }
 }
 
-// FORMULIER VERZENDEN & KEIHARDE WEEKEND CHECK
+// FORMULIER VERZENDEN
 document.getElementById('uren-form').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    const controle = document.querySelector('input[name="controle"]:checked').value;
-    if(controle === 'Nee') {
-        alert("Pas uw antwoorden aan voordat u verzendt."); return;
-    }
-
     // KEIHARDE BACKEND-STIJL CONTROLE OP WEEKEND
     const datumVal = document.getElementById('datum').value;
     const dateObj = new Date(datumVal);
     if (dateObj.getDay() === 0 || dateObj.getDay() === 6) {
         alert("Systeemfout: Weekenduren worden onder geen enkele voorwaarde geaccepteerd.");
-        return; // Breekt het opslaan af
+        return; 
     }
 
     let omschrijving = document.querySelector('input[name="omschrijving"]:checked').value;
@@ -107,7 +102,7 @@ document.getElementById('uren-form').addEventListener('submit', function(e) {
 
     const invoerData = {
         id: editingId ? editingId : Date.now(),
-        user: currentUser,
+        user: currentUser, // Gebruikersnaam wordt automatisch meegenomen!
         datum: datumVal,
         uren: document.getElementById('uren').value,
         adres: document.getElementById('adres').value,
@@ -115,18 +110,16 @@ document.getElementById('uren-form').addEventListener('submit', function(e) {
     };
 
     if (editingId) {
-        // Update bestaande rij
         const index = urenData.findIndex(u => u.id === editingId);
         urenData[index] = invoerData;
         alert("Uren succesvol bijgewerkt!");
     } else {
-        // Nieuwe rij
         urenData.push(invoerData);
         alert("Uren succesvol opgeslagen!");
     }
 
     localStorage.setItem('urenData', JSON.stringify(urenData));
-    cancelEdit(); // Reset formulier status
+    cancelEdit(); 
     renderLijst();
     showTab('overview-tab');
 });
@@ -143,13 +136,12 @@ function getWeekInfo(dateString) {
 
 const dagenNamen = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
 
-// LIJST TONEN (Gegroepeerd per week)
+// LIJST TONEN
 function renderLijst() {
     const lijst = document.getElementById('uren-lijst');
     lijst.innerHTML = '';
     
     let userUren = urenData.filter(item => item.user === currentUser);
-    userUren.sort((a,b) => new Date(b.datum) - new Date(a.datum)); // Nieuwste eerst
     
     if(userUren.length === 0) {
         lijst.innerHTML = '<div class="card"><p>Nog geen uren geregistreerd.</p></div>'; return;
@@ -169,15 +161,17 @@ function renderLijst() {
         }
     });
 
-    // Render Groepen
+    // Render Groepen (Weken sorteren van nieuw naar oud)
     Object.keys(grouped).sort().reverse().forEach(key => {
         const weekNum = key.split('-W')[1];
         const group = grouped[key];
         
+        // Items BINNEN de week sorteren van Maandag -> Vrijdag
+        group.items.sort((a, b) => new Date(a.datum) - new Date(b.datum));
+        
         const weekDiv = document.createElement('div');
         weekDiv.className = 'week-container';
         
-        // Dag totalen string maken
         let totalsHTML = '';
         for(let i = 1; i <= 5; i++) {
             if(group.totals[i] > 0) {
@@ -208,7 +202,8 @@ function renderLijst() {
                     </div>
                     <div>
                         <span class="badge">${item.uren} uur</span> - <strong>${item.omschrijving}</strong><br>
-                        <span style="color: var(--text-muted); font-size: 14px;">📍 ${item.adres}</span>
+                        <span style="color: var(--text-muted); font-size: 14px;">📍 ${item.adres}</span><br>
+                        <span style="color: var(--primary); font-size: 13px; font-weight: 600; margin-top: 5px; display: inline-block;">👤 ${item.user}</span>
                     </div>
                 </div>
             `;
@@ -230,7 +225,6 @@ function editUren(id) {
     document.getElementById('uren').value = item.uren;
     document.getElementById('adres').value = item.adres;
     
-    // Selecteer juiste radio button
     const radios = document.getElementsByName('omschrijving');
     let found = false;
     for(let r of radios) {
@@ -249,14 +243,14 @@ function editUren(id) {
     document.getElementById('cancel-edit-btn').classList.remove('hidden');
     
     showTab('form-tab');
-    checkUren(); // Her-evalueer uren blokkade (negeert nu zichzelf)
+    checkUren(); 
 }
 
 function cancelEdit() {
     editingId = null;
     document.getElementById('uren-form').reset();
     document.getElementById('form-title').innerText = "Uren invullen";
-    document.getElementById('submit-btn').innerText = "Verzenden";
+    document.getElementById('submit-btn').innerText = "Opslaan";
     document.getElementById('cancel-edit-btn').classList.add('hidden');
     document.getElementById('andere-tekst').classList.add('hidden');
 }
