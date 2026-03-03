@@ -1,0 +1,29 @@
+* { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body { background-color: #f4f4f9; margin: 0; padding: 20px; color: #333; }
+.container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.hidden { display: none !important; }
+h2, h3 { color: #444; margin-top: 0; }
+.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+
+input[type="text"], input[type="password"], input[type="number"], input[type="date"] {
+    width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;
+}
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-group label:not(:first-child) { font-weight: normal; margin-top: 8px; display: flex; align-items: center; }
+.form-group input[type="radio"] { margin-right: 10px; width: auto; }
+
+button { background-color: #6c757d; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 4px; font-size: 16px; width: 100%; margin-top: 10px; }
+button:hover { background-color: #5a6268; }
+button:disabled { background-color: #ccc; cursor: not-allowed; }
+.btn-small { width: auto; padding: 8px 12px; font-size: 14px; }
+.btn-export { background-color: #28a745; margin-bottom: 15px; }
+
+.error { color: red; font-size: 14px; margin-top: 5px; display: block; }
+
+.tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+.tab-btn { background: none; color: #333; width: 50%; border-radius: 0; margin: 0; border-bottom: 2px solid transparent; font-weight: bold; }
+.tab-btn.active { border-bottom: 2px solid #6c757d; color: #6c757d; }
+
+.uren-card { border: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 4px; background: #fafafa; position: relative; }
+.delete-btn { position: absolute; top: 10px; right: 10px; background: #dc3545; width: auto; padding: 5px 10px; font-size: 12px; }
