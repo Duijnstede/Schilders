@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urenregistratie Damian</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="login-screen" class="container">
+        <h2>Inloggen Urenregistratie</h2>
+        <input type="text" id="username" placeholder="Gebruikersnaam (bijv. schilder1)">
+        <input type="password" id="password" placeholder="Wachtwoord (test: 1234)">
+        <button onclick="login()">Inloggen</button>
+    </div>
+
+    <div id="app-screen" class="container hidden">
+        <div class="header">
+            <h2>Welkom, <span id="user-display"></span></h2>
+            <button onclick="logout()" class="btn-small">Uitloggen</button>
+        </div>
+
+        <div class="tabs">
+            <button onclick="showTab('form-tab')" class="tab-btn active">Nieuwe Uren</button>
+            <button onclick="showTab('overview-tab')" class="tab-btn">Mijn Overzicht</button>
+        </div>
+
+        <div id="form-tab" class="tab-content">
+            <form id="uren-form">
+                <div class="form-group">
+                    <label>1. Datum (Data) *</label>
+                    <input type="date" id="datum" required onchange="checkDatum()">
+                    <span id="datum-error" class="error hidden">In het weekend kunnen geen uren geregistreerd worden.</span>
+                </div>
+
+                <div class="form-group">
+                    <label>2. Aantal uren gewerkt (Liczba przepracowanych godzin) *</label>
+                    <input type="number" id="uren" min="0.5" max="8" step="0.5" placeholder="Voer een getal in (max 8)" required oninput="checkUren()">
+                    <span id="uren-error" class="error hidden">Je overschrijdt het maximum van 8 uur voor deze dag!</span>
+                </div>
+
+                <div class="form-group">
+                    <label>3. Adres + huisnummer (Adres + numer domu) *</label>
+                    <input type="text" id="adres" placeholder="Voer uw antwoord in" required>
+                </div>
+
+                <div class="form-group">
+                    <label>4. Omschrijving werkzaamheden (Opis pracy) *</label>
+                    <label><input type="radio" name="omschrijving" value="Schilderwerkzaamheden" required> Schilderwerkzaamheden (Prace malarskie)</label>
+                    <label><input type="radio" name="omschrijving" value="Sloopwerkzaamheden"> Sloopwerkzaamheden (Prace rozbiórkowe)</label>
+                    <label><input type="radio" name="omschrijving" value="Zieke dag"> Zieke dag (Dzień choroby)</label>
+                    <label><input type="radio" name="omschrijving" value="Vrije dag"> Vrije dag (Dzień wolny)</label>
+                    <label><input type="radio" name="omschrijving" value="Vakantie"> Vakantie (Wakacje)</label>
+                    <label><input type="radio" name="omschrijving" value="Andere" id="radio-andere"> Andere:</label>
+                    <input type="text" id="andere-tekst" placeholder="Vul in..." class="hidden">
+                </div>
+
+                <div class="form-group">
+                    <label>5. Controleer je antwoorden. Klopt alles? (Sprawdź swoje odpowiedzi. Czy wszystko się zgadza?) *</label>
+                    <label><input type="radio" name="controle" value="Ja" required> Ja (Tak)</label>
+                    <label><input type="radio" name="controle" value="Nee"> Nee (Nie)</label>
+                </div>
+
+                <button type="submit" id="submit-btn">Verzenden</button>
+            </form>
+        </div>
+
+        <div id="overview-tab" class="tab-content hidden">
+            <h3>Ingediende uren</h3>
+            <button onclick="exportToCSV()" class="btn-export">Exporteer naar Excel (CSV)</button>
+            <div id="uren-lijst">
+                </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
