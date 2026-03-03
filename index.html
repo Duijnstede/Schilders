@@ -8,67 +8,79 @@
 </head>
 <body>
 
-    <div id="login-screen" class="container">
+    <div id="login-screen" class="container login-container">
+        <div class="logo-area">🎨</div>
         <h2>Inloggen Urenregistratie</h2>
         <input type="text" id="username" placeholder="Gebruikersnaam (bijv. schilder1)">
         <input type="password" id="password" placeholder="Wachtwoord (test: 1234)">
-        <button onclick="login()">Inloggen</button>
+        <button onclick="login()" class="btn-primary">Inloggen</button>
     </div>
 
     <div id="app-screen" class="container hidden">
         <div class="header">
-            <h2>Welkom, <span id="user-display"></span></h2>
-            <button onclick="logout()" class="btn-small">Uitloggen</button>
+            <div>
+                <h2 style="margin:0;">Hallo, <span id="user-display" style="color: #0056b3;"></span></h2>
+                <small id="current-date-display"></small>
+            </div>
+            <button onclick="logout()" class="btn-outline">Uitloggen</button>
         </div>
 
         <div class="tabs">
-            <button onclick="showTab('form-tab')" class="tab-btn active">Nieuwe Uren</button>
-            <button onclick="showTab('overview-tab')" class="tab-btn">Mijn Overzicht</button>
+            <button onclick="showTab('form-tab')" id="tab-btn-form" class="tab-btn active">🕒 Nieuwe Uren</button>
+            <button onclick="showTab('overview-tab')" id="tab-btn-overview" class="tab-btn">📅 Mijn Overzicht</button>
         </div>
 
         <div id="form-tab" class="tab-content">
-            <form id="uren-form">
-                <div class="form-group">
-                    <label>1. Datum (Data) *</label>
-                    <input type="date" id="datum" required onchange="checkDatum()">
-                    <span id="datum-error" class="error hidden">In het weekend kunnen geen uren geregistreerd worden.</span>
-                </div>
+            <div class="card">
+                <form id="uren-form">
+                    <h3 id="form-title">Uren invullen</h3>
+                    
+                    <div class="form-group">
+                        <label>1. Datum (Data) *</label>
+                        <input type="date" id="datum" required onchange="checkDatum()">
+                        <span id="datum-error" class="error hidden">⚠️ In het weekend kunnen geen uren geregistreerd worden.</span>
+                    </div>
 
-                <div class="form-group">
-                    <label>2. Aantal uren gewerkt (Liczba przepracowanych godzin) *</label>
-                    <input type="number" id="uren" min="0.5" max="8" step="0.5" placeholder="Voer een getal in (max 8)" required oninput="checkUren()">
-                    <span id="uren-error" class="error hidden">Je overschrijdt het maximum van 8 uur voor deze dag!</span>
-                </div>
+                    <div class="form-group">
+                        <label>2. Aantal uren gewerkt (Liczba przepracowanych godzin) *</label>
+                        <input type="number" id="uren" min="0.5" max="8" step="0.5" placeholder="Voer een getal in (max 8)" required oninput="checkUren()">
+                        <span id="uren-error" class="error hidden">⚠️ Je overschrijdt het maximum van 8 uur voor deze dag!</span>
+                    </div>
 
-                <div class="form-group">
-                    <label>3. Adres + huisnummer (Adres + numer domu) *</label>
-                    <input type="text" id="adres" placeholder="Voer uw antwoord in" required>
-                </div>
+                    <div class="form-group">
+                        <label>3. Adres + huisnummer (Adres + numer domu) *</label>
+                        <input type="text" id="adres" placeholder="Voer uw antwoord in" required>
+                    </div>
 
-                <div class="form-group">
-                    <label>4. Omschrijving werkzaamheden (Opis pracy) *</label>
-                    <label><input type="radio" name="omschrijving" value="Schilderwerkzaamheden" required> Schilderwerkzaamheden (Prace malarskie)</label>
-                    <label><input type="radio" name="omschrijving" value="Sloopwerkzaamheden"> Sloopwerkzaamheden (Prace rozbiórkowe)</label>
-                    <label><input type="radio" name="omschrijving" value="Zieke dag"> Zieke dag (Dzień choroby)</label>
-                    <label><input type="radio" name="omschrijving" value="Vrije dag"> Vrije dag (Dzień wolny)</label>
-                    <label><input type="radio" name="omschrijving" value="Vakantie"> Vakantie (Wakacje)</label>
-                    <label><input type="radio" name="omschrijving" value="Andere" id="radio-andere"> Andere:</label>
-                    <input type="text" id="andere-tekst" placeholder="Vul in..." class="hidden">
-                </div>
+                    <div class="form-group">
+                        <label>4. Omschrijving werkzaamheden (Opis pracy) *</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="omschrijving" value="Schilderwerkzaamheden" required> Schilderwerkzaamheden (Prace malarskie)</label>
+                            <label><input type="radio" name="omschrijving" value="Sloopwerkzaamheden"> Sloopwerkzaamheden (Prace rozbiórkowe)</label>
+                            <label><input type="radio" name="omschrijving" value="Zieke dag"> Zieke dag (Dzień choroby)</label>
+                            <label><input type="radio" name="omschrijving" value="Vrije dag"> Vrije dag (Dzień wolny)</label>
+                            <label><input type="radio" name="omschrijving" value="Vakantie"> Vakantie (Wakacje)</label>
+                            <label><input type="radio" name="omschrijving" value="Andere" id="radio-andere"> Andere:</label>
+                            <input type="text" id="andere-tekst" placeholder="Vul specificatie in..." class="hidden">
+                        </div>
+                    </div>
 
-                <div class="form-group">
-                    <label>5. Controleer je antwoorden. Klopt alles? (Sprawdź swoje odpowiedzi. Czy wszystko się zgadza?) *</label>
-                    <label><input type="radio" name="controle" value="Ja" required> Ja (Tak)</label>
-                    <label><input type="radio" name="controle" value="Nee"> Nee (Nie)</label>
-                </div>
+                    <div class="form-group check-group">
+                        <label>5. Controleer je antwoorden. Klopt alles? (Sprawdź swoje odpowiedzi) *</label>
+                        <label><input type="radio" name="controle" value="Ja" required> Ja (Tak)</label>
+                        <label><input type="radio" name="controle" value="Nee"> Nee (Nie)</label>
+                    </div>
 
-                <button type="submit" id="submit-btn">Verzenden</button>
-            </form>
+                    <div class="form-actions">
+                        <button type="button" id="cancel-edit-btn" class="btn-outline hidden" onclick="cancelEdit()">Annuleren</button>
+                        <button type="submit" id="submit-btn" class="btn-primary">Verzenden</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <div id="overview-tab" class="tab-content hidden">
-            <h3>Ingediende uren</h3>
-            <button onclick="exportToCSV()" class="btn-export">Exporteer naar Excel (CSV)</button>
+            <button onclick="exportToCSV()" class="btn-success mb-15">📊 Exporteer naar Excel (CSV)</button>
             <div id="uren-lijst">
                 </div>
         </div>
