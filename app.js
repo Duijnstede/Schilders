@@ -1,44 +1,77 @@
-let urenData = JSON.parse(localStorage.getItem('urenData')) || [];
+// 1. Importeer de benodigde Firebase modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+// ------------------------------------------------------------------------
+// PLAK JOUW GEKOPIEERDE FIREBASE CONFIG HIERONDER (Vervang dit hele blokje met jouw gegevens)
+const firebaseConfig = {
+  apiKey: "AIzaSyC0eTtQOX50MqEHo5D0B5-yBPiAfrX3Lyk",
+  authDomain: "urenregistratie-schilders.firebaseapp.com",
+  projectId: "urenregistratie-schilders",
+  storageBucket: "urenregistratie-schilders.firebasestorage.app",
+  messagingSenderId: "885772883499",
+  appId: "1:885772883499:web:bb21bcbf9854ff8cdc3c6e"
+};
+// ------------------------------------------------------------------------
+
+// 2. Initialiseer Firebase (Start de motor)
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
 let currentUser = null;
+let urenData = [];
 let editingId = null;
 
-// Toon huidige datum
+// Datum weergave instellen
 document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
 
-// "Andere" logica
+// "Andere" logica radiobuttons
 document.querySelectorAll('input[name="omschrijving"]').forEach(radio => {
     radio.addEventListener('change', function() {
         const andereInput = document.getElementById('andere-tekst');
         if(this.id === 'radio-andere') {
-            andereInput.classList.remove('hidden');
-            andereInput.required = true;
+            andereInput.classList.remove('hidden'); andereInput.required = true;
         } else {
-            andereInput.classList.add('hidden');
-            andereInput.required = false;
+            andereInput.classList.add('hidden'); andereInput.required = false;
         }
     });
 });
 
-// INLOGGEN
-function login() {
-    const user = document.getElementById('username').value;
-    if (user) { 
+// CHECK OF IEMAND IS INGELOGD (Firebase luisteraar)
+onAuthStateChanged(auth, (user) => {
+    if (user) {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
-        document.getElementById('user-display').innerText = user;
-        renderLijst();
+        document.getElementById('user-display').innerText = user.email.split('@')[0]; // Toont naam voor het @ teken
+        haalUrenOp(); // Haal uren uit database
+    } else {
+        currentUser = null;
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('app-screen').classList.add('hidden');
+    }
+});
+
+// LOGIN FUNCTIE
+window.login = async function() {
+    const email = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+    } catch (error) {
+        alert("Fout bij inloggen: Controleer e-mailadres en wachtwoord.");
     }
 }
 
-function logout() {
-    currentUser = null;
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('app-screen').classList.add('hidden');
+// UITLOGGEN
+window.logout = function() {
+    signOut(auth);
 }
 
 // TABS WISSELEN
-function showTab(tabId) {
+window.showTab = function(tabId) {
     document.getElementById('form-tab').classList.add('hidden');
     document.getElementById('overview-tab').classList.add('hidden');
     document.getElementById(tabId).classList.remove('hidden');
@@ -51,29 +84,27 @@ function showTab(tabId) {
 }
 
 // CONTROLEER WEEKEND (Visueel)
-function checkDatum() {
+window.checkDatum = function() {
     const datumVal = document.getElementById('datum').value;
     if (!datumVal) return;
-    const dateObj = new Date(datumVal);
-    const day = dateObj.getDay();
-    
+    const day = new Date(datumVal).getDay();
     if (day === 0 || day === 6) {
         document.getElementById('datum-error').classList.remove('hidden');
         document.getElementById('submit-btn').disabled = true;
     } else {
         document.getElementById('datum-error').classList.add('hidden');
-        checkUren(); 
+        window.checkUren(); 
     }
 }
 
 // CONTROLEER MAX 8 UUR PER DAG
-function checkUren() {
+window.checkUren = function() {
     const datum = document.getElementById('datum').value;
     const nieuweUren = parseFloat(document.getElementById('uren').value) || 0;
     if (!datum) return;
 
     const urenOpDatum = urenData
-        .filter(item => item.user === currentUser && item.datum === datum && item.id !== editingId)
+        .filter(item => item.datum === datum && item.id !== editingId)
         .reduce((totaal, item) => totaal + parseFloat(item.uren), 0);
 
     if (urenOpDatum + nieuweUren > 8) {
@@ -85,15 +116,30 @@ function checkUren() {
     }
 }
 
-// FORMULIER VERZENDEN
-document.getElementById('uren-form').addEventListener('submit', function(e) {
+// DATABASE: UREN OPHALEN
+async function haalUrenOp() {
+    if (!currentUser) return;
+    urenData = [];
+    const q = query(collection(db, "uren"), where("userId", "==", currentUser.uid));
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+        urenData.push({ id: doc.id, ...doc.data() });
+    });
+    renderLijst();
+}
+
+// FORMULIER VERZENDEN NAAR DATABASE
+document.getElementById('uren-form').addEventListener('submit', async function(e) {
     e.preventDefault();
+    document.getElementById('submit-btn').disabled = true; 
+    document.getElementById('submit-btn').innerText = "Opslaan...";
     
-    // KEIHARDE BACKEND-STIJL CONTROLE OP WEEKEND
     const datumVal = document.getElementById('datum').value;
     const dateObj = new Date(datumVal);
     if (dateObj.getDay() === 0 || dateObj.getDay() === 6) {
-        alert("Systeemfout: Weekenduren worden onder geen enkele voorwaarde geaccepteerd.");
+        alert("Weekenduren worden niet geaccepteerd.");
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('submit-btn').innerText = "Opslaan";
         return; 
     }
 
@@ -101,30 +147,36 @@ document.getElementById('uren-form').addEventListener('submit', function(e) {
     if (omschrijving === 'Andere') omschrijving = document.getElementById('andere-tekst').value;
 
     const invoerData = {
-        id: editingId ? editingId : Date.now(),
-        user: currentUser, // Gebruikersnaam wordt automatisch meegenomen!
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
         datum: datumVal,
         uren: document.getElementById('uren').value,
         adres: document.getElementById('adres').value,
-        omschrijving: omschrijving
+        omschrijving: omschrijving,
+        timestamp: Date.now()
     };
 
-    if (editingId) {
-        const index = urenData.findIndex(u => u.id === editingId);
-        urenData[index] = invoerData;
-        alert("Uren succesvol bijgewerkt!");
-    } else {
-        urenData.push(invoerData);
-        alert("Uren succesvol opgeslagen!");
+    try {
+        if (editingId) {
+            await updateDoc(doc(db, "uren", editingId), invoerData);
+            alert("Uren succesvol bijgewerkt!");
+        } else {
+            await addDoc(collection(db, "uren"), invoerData);
+            alert("Uren succesvol opgeslagen!");
+        }
+        await haalUrenOp(); // Ververs lijst
+        window.cancelEdit(); 
+        window.showTab('overview-tab');
+    } catch (error) {
+        console.error("Fout bij opslaan:", error);
+        alert("Er ging iets mis bij het opslaan.");
     }
-
-    localStorage.setItem('urenData', JSON.stringify(urenData));
-    cancelEdit(); 
-    renderLijst();
-    showTab('overview-tab');
+    
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('submit-btn').innerText = "Opslaan";
 });
 
-// HELPER: ISO WEEK NUMMER BEREKENEN
+// HELPER: ISO WEEK NUMMER
 function getWeekInfo(dateString) {
     const d = new Date(dateString);
     d.setHours(0, 0, 0, 0);
@@ -141,15 +193,12 @@ function renderLijst() {
     const lijst = document.getElementById('uren-lijst');
     lijst.innerHTML = '';
     
-    let userUren = urenData.filter(item => item.user === currentUser);
-    
-    if(userUren.length === 0) {
+    if(urenData.length === 0) {
         lijst.innerHTML = '<div class="card"><p>Nog geen uren geregistreerd.</p></div>'; return;
     }
 
-    // Groeperen per jaar-week
     const grouped = {};
-    userUren.forEach(item => {
+    urenData.forEach(item => {
         const weekInfo = getWeekInfo(item.datum);
         const key = `${weekInfo.year}-W${weekInfo.week.toString().padStart(2, '0')}`;
         if(!grouped[key]) grouped[key] = { items: [], totals: { 1:0, 2:0, 3:0, 4:0, 5:0 } };
@@ -161,12 +210,10 @@ function renderLijst() {
         }
     });
 
-    // Render Groepen (Weken sorteren van nieuw naar oud)
     Object.keys(grouped).sort().reverse().forEach(key => {
         const weekNum = key.split('-W')[1];
         const group = grouped[key];
         
-        // Items BINNEN de week sorteren van Maandag -> Vrijdag
         group.items.sort((a, b) => new Date(a.datum) - new Date(b.datum));
         
         const weekDiv = document.createElement('div');
@@ -174,9 +221,7 @@ function renderLijst() {
         
         let totalsHTML = '';
         for(let i = 1; i <= 5; i++) {
-            if(group.totals[i] > 0) {
-                totalsHTML += `<span class="day-stat">${dagenNamen[i]}: ${group.totals[i]}u</span>`;
-            }
+            if(group.totals[i] > 0) totalsHTML += `<span class="day-stat">${dagenNamen[i]}: ${group.totals[i]}u</span>`;
         }
 
         let html = `
@@ -184,26 +229,25 @@ function renderLijst() {
                 <h3>Week ${weekNum}</h3>
                 <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">Totaal: ${group.items.reduce((sum, i) => sum + parseFloat(i.uren), 0)} uur</span>
             </div>
-            <div class="week-summary">
-                ${totalsHTML}
-            </div>
+            <div class="week-summary">${totalsHTML}</div>
         `;
 
         group.items.forEach(item => {
             const datumNL = new Date(item.datum).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
+            const naamVoorAt = item.userEmail.split('@')[0];
             html += `
                 <div class="uren-card">
                     <div class="uren-card-header">
                         <strong>${datumNL}</strong>
                         <div class="action-buttons">
-                            <button class="btn-icon" onclick="editUren(${item.id})" title="Bewerken">✏️</button>
-                            <button class="btn-icon btn-delete" onclick="verwijderUren(${item.id})" title="Verwijderen">🗑️</button>
+                            <button class="btn-icon" onclick="editUren('${item.id}')" title="Bewerken">✏️</button>
+                            <button class="btn-icon btn-delete" onclick="verwijderUren('${item.id}')" title="Verwijderen">🗑️</button>
                         </div>
                     </div>
                     <div>
                         <span class="badge">${item.uren} uur</span> - <strong>${item.omschrijving}</strong><br>
-                        <span style="color: var(--text-muted); font-size: 14px;">📍 ${item.adres}</span><br>
-                        <span style="color: var(--primary); font-size: 13px; font-weight: 600; margin-top: 5px; display: inline-block;">👤 ${item.user}</span>
+                        <span style="color: #6c757d; font-size: 14px;">📍 ${item.adres}</span><br>
+                        <span style="color: #0056b3; font-size: 13px; font-weight: 600; margin-top: 5px; display: inline-block;">👤 ${naamVoorAt}</span>
                     </div>
                 </div>
             `;
@@ -214,8 +258,8 @@ function renderLijst() {
     });
 }
 
-// BEWERKEN VAN UREN
-function editUren(id) {
+// BEWERKEN
+window.editUren = function(id) {
     const item = urenData.find(u => u.id === id);
     if(!item) return;
     
@@ -242,11 +286,11 @@ function editUren(id) {
     document.getElementById('submit-btn').innerText = "Opslaan (Bewerken)";
     document.getElementById('cancel-edit-btn').classList.remove('hidden');
     
-    showTab('form-tab');
-    checkUren(); 
+    window.showTab('form-tab');
+    window.checkUren(); 
 }
 
-function cancelEdit() {
+window.cancelEdit = function() {
     editingId = null;
     document.getElementById('uren-form').reset();
     document.getElementById('form-title').innerText = "Uren invullen";
@@ -255,21 +299,25 @@ function cancelEdit() {
     document.getElementById('andere-tekst').classList.add('hidden');
 }
 
-function verwijderUren(id) {
+// VERWIJDEREN UIT DATABASE
+window.verwijderUren = async function(id) {
     if(confirm("Weet je zeker dat je deze uren wilt verwijderen?")) {
-        urenData = urenData.filter(item => item.id !== id);
-        localStorage.setItem('urenData', JSON.stringify(urenData));
-        renderLijst();
-        if(editingId === id) cancelEdit();
+        try {
+            await deleteDoc(doc(db, "uren", id));
+            await haalUrenOp();
+            if(editingId === id) window.cancelEdit();
+        } catch (error) {
+            alert("Fout bij verwijderen.");
+        }
     }
 }
 
 // EXPORTEREN
-function exportToCSV() {
+window.exportToCSV = function() {
     if(urenData.length === 0) { alert("Geen data."); return; }
     let csvContent = "data:text/csv;charset=utf-8,Schilder,Datum,Uren,Adres,Omschrijving\n";
     urenData.forEach(row => {
-        csvContent += `${row.user},${row.datum},${row.uren},"${row.adres}","${row.omschrijving}"\n`;
+        csvContent += `${row.userEmail},${row.datum},${row.uren},"${row.adres}","${row.omschrijving}"\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
