@@ -11,15 +11,15 @@
     <div id="login-screen" class="container login-container">
         <div class="logo-area">🎨</div>
         <h2>Inloggen Urenregistratie</h2>
-        <input type="text" id="username" placeholder="Gebruikersnaam (bijv. schilder1)">
-        <input type="password" id="password" placeholder="Wachtwoord (test: 1234)">
-        <button onclick="login()" class="btn-primary">Inloggen</button>
+        <input type="text" id="username" placeholder="Gebruikersnaam (adres e-mail)">
+        <input type="password" id="password" placeholder="Wachtwoord (hasło)">
+        <button onclick="login()" class="btn-primary">Inloggen (Zaloguj się)</button>
     </div>
 
     <div id="app-screen" class="container hidden">
         <div class="header">
             <div>
-                <h2 style="margin:0;">Hallo, <span id="user-display" style="color: #0056b3;"></span></h2>
+                <h2 style="margin:0;">Cześć, <span id="user-display" style="color: #0056b3;"></span></h2>
                 <small id="current-date-display"></small>
             </div>
             <button onclick="logout()" class="btn-outline">Wyloguj</button>
@@ -33,23 +33,23 @@
         <div id="form-tab" class="tab-content">
             <div class="card">
                 <form id="uren-form">
-                    <h3 id="form-title">Uren invullen</h3>
+                    <h3 id="form-title">Uren invullen (Wprowadź godziny)</h3>
                     
                     <div class="form-group">
                         <label>1. Datum (Data) *</label>
                         <input type="date" id="datum" required onchange="checkDatum()">
-                        <span id="datum-error" class="error hidden">⚠️ In het weekend kunnen geen uren geregistreerd worden.</span>
+                        <span id="datum-error" class="error hidden">⚠️ W weekend nie można rejestrować godzin. (In het weekend kunnen geen uren geregistreerd worden.)</span>
                     </div>
 
                     <div class="form-group">
                         <label>2. Aantal uren gewerkt (Liczba przepracowanych godzin) *</label>
                         <input type="number" id="uren" min="0.5" max="8" step="0.5" placeholder="Voer een getal in (max 8)" required oninput="checkUren()">
-                        <span id="uren-error" class="error hidden">⚠️ Je overschrijdt het maximum van 8 uur voor deze dag!</span>
+                        <span id="uren-error" class="error hidden">⚠️ Przekraczasz limit 8 godzin na ten dzień! (Je overschrijdt het max. van 8 uur voor deze dag!)</span>
                     </div>
 
                     <div class="form-group">
                         <label>3. Adres + huisnummer (Adres + numer domu) *</label>
-                        <input type="text" id="adres" placeholder="Voer uw antwoord in" required>
+                        <input type="text" id="adres" placeholder="Voer uw antwoord in (Wpisz odpowiedź)" required>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 30px;">
@@ -60,14 +60,14 @@
                             <label><input type="radio" name="omschrijving" value="Zieke dag"> Zieke dag (Dzień choroby)</label>
                             <label><input type="radio" name="omschrijving" value="Vrije dag"> Vrije dag (Dzień wolny)</label>
                             <label><input type="radio" name="omschrijving" value="Vakantie"> Vakantie (Wakacje)</label>
-                            <label><input type="radio" name="omschrijving" value="Andere" id="radio-andere"> Andere:</label>
+                            <label><input type="radio" name="omschrijving" value="Andere" id="radio-andere"> Andere (Inne):</label>
                             <input type="text" id="andere-tekst" placeholder="Vul specificatie in..." class="hidden">
                         </div>
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" id="cancel-edit-btn" class="btn-outline hidden" onclick="cancelEdit()">Annuleren</button>
-                        <button type="submit" id="submit-btn" class="btn-primary">Opslaan</button>
+                        <button type="button" id="cancel-edit-btn" class="btn-outline hidden" onclick="cancelEdit()">Annuleren (Anuluj)</button>
+                        <button type="submit" id="submit-btn" class="btn-primary">Opslaan (Zapisz)</button>
                     </div>
                 </form>
             </div>
@@ -80,5 +80,6 @@
         </div>
     </div>
 
-<script type="module" src="app.js"></script></body>
+    <script type="module" src="app.js"></script>
+</body>
 </html>
