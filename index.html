@@ -9,8 +9,11 @@
 <body>
 
     <div id="login-screen" class="container login-container">
-        <div class="logo-area">🎨</div>
-        <h2>Inloggen Urenregistratie</h2>
+        <div class="logo-area">
+            <img src="Duijnstede Logo.jpg" alt="Duijnstede Beheer Logo" class="login-logo">
+        </div>
+        <h2>Duijnstede Beheer B.V.</h2>
+        
         <input type="text" id="username" placeholder="Gebruikersnaam (adres e-mail)">
         <input type="password" id="password" placeholder="Wachtwoord (hasło)">
         <button onclick="login()" class="btn-primary">Inloggen (Zaloguj się)</button>
@@ -83,6 +86,17 @@
         <div id="overview-tab" class="tab-content hidden">
             <div id="uren-lijst">
                 </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 style="margin-top: 0;">⚠️ Weet je het zeker?</h3>
+            <p style="color: #6c757d; margin-bottom: 25px;">Czy na pewno chcesz usunąć te godziny?<br><span style="font-size: 13px;">(Weet je zeker dat je deze uren wilt verwijderen?)</span></p>
+            <div class="form-actions">
+                <button onclick="closeConfirmModal()" class="btn-outline">Annuleren (Anuluj)</button>
+                <button onclick="executeDelete()" class="btn-danger">Verwijderen (Usuń)</button>
+            </div>
         </div>
     </div>
 
