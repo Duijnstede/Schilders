@@ -1,8 +1,8 @@
-// 1. Importeer de benodigde Firebase modules
+// 1. Importeer de benodigde Firebase & Excel modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs";
 // ------------------------------------------------------------------------
 // PLAK JOUW GEKOPIEERDE FIREBASE CONFIG HIERONDER
 const firebaseConfig = {
