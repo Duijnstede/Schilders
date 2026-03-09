@@ -1,6 +1,6 @@
 /* --- GLOBALE VARIABELEN (Kleuren) --- */
 :root {
-    --primary: #5c85d6; /* De hoofdkleur (blauw) */
+    --primary: #5c85d6; 
     --primary-hover: #4a70b5;
     --bg-color: #f4f6f9;
     --card-bg: #ffffff;
@@ -301,4 +301,34 @@ button {
 }
 .dropdown-item:hover {
     background-color: #f8fafc;
+}
+
+/* --- SUCCES MELDING (TOAST) --- */
+.toast {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: var(--success);
+    color: white;
+    text-align: center;
+    border-radius: 8px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.4s, bottom 0.4s;
+}
+
+.toast.show {
+    visibility: visible;
+    opacity: 1;
+    bottom: 50px;
 }
