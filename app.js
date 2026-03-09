@@ -17,7 +17,6 @@ const firebaseConfig = {
 // Vul hier exact het e-mailadres in dat jij als beheerder gaat gebruiken!
 const ADMIN_EMAIL = "admin@schilders.nl"; 
 // ------------------------------------------------------------------------
-
 // Initialiseer Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -26,6 +25,7 @@ const db = getFirestore(app);
 let currentUser = null;
 let urenData = [];
 let editingId = null;
+let deleteIdPending = null; // Nieuw: Onthoudt welk uur we willen verwijderen
 
 // --- BEVEILIGINGS FILTERS & HELPERS ---
 function sanitizeHTML(str) {
@@ -43,7 +43,6 @@ function sanitizeCSV(str) {
     return str;
 }
 
-// Nieuwe functie: Maakt van een e-mail (louis.jansen@...) een mooie naam (Louis Jansen)
 function formatName(email) {
     if (!email) return '';
     let namePart = email.split('@')[0];
@@ -73,7 +72,7 @@ window.showToast = function(message) {
     toast.classList.add("show");
     setTimeout(function(){ 
         toast.classList.remove("show"); 
-    }, 3000); // Verdwijnt automatisch na 3 seconden
+    }, 3000); 
 }
 
 // Datum weergave instellen
@@ -98,7 +97,6 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
         
-        // Gebruik de nieuwe formatName functie voor de begroeting
         document.getElementById('user-display').innerText = sanitizeHTML(formatName(user.email));
         
         if (user.email === ADMIN_EMAIL) {
@@ -339,8 +337,6 @@ function renderLijst() {
             
             const veiligAdres = sanitizeHTML(item.adres);
             let veiligeOmschrijving = sanitizeHTML(item.omschrijving);
-            
-            // Gebruik de nieuwe formatName functie voor de kaartjes
             const mooieNaam = sanitizeHTML(formatName(item.userEmail));
 
             if (poolseVertalingen[veiligeOmschrijving]) {
@@ -413,25 +409,43 @@ window.cancelEdit = function() {
     document.getElementById('andere-tekst').classList.add('hidden');
 }
 
-// VERWIJDEREN
-window.verwijderUren = async function(id) {
-    if(confirm("Czy na pewno chcesz usunąć te godziny? (Weet je zeker dat je deze uren wilt verwijderen?)")) {
-        try {
-            await deleteDoc(doc(db, "uren", id));
-            await haalUrenOp();
-            if(editingId === id) window.cancelEdit();
-        } catch (error) {
-            alert("Fout bij verwijderen. (Błąd podczas usuwania.)");
-        }
+
+// --- NIEUWE VERWIJDER POP-UP FUNCTIES ---
+
+// 1. Pop-up openen
+window.verwijderUren = function(id) {
+    deleteIdPending = id; // Sla op welk uur de gebruiker wil verwijderen
+    document.getElementById('confirm-modal').classList.remove('hidden');
+}
+
+// 2. Pop-up sluiten (Annuleren)
+window.closeConfirmModal = function() {
+    deleteIdPending = null;
+    document.getElementById('confirm-modal').classList.add('hidden');
+}
+
+// 3. Definitief verwijderen
+window.executeDelete = async function() {
+    if(!deleteIdPending) return;
+    const id = deleteIdPending;
+    window.closeConfirmModal(); // Verberg de pop-up direct
+
+    try {
+        await deleteDoc(doc(db, "uren", id));
+        await haalUrenOp();
+        if(editingId === id) window.cancelEdit();
+        showToast("Godziny usunięte! (Uren succesvol verwijderd!)");
+    } catch (error) {
+        alert("Błąd podczas usuwania. (Fout bij verwijderen.)");
     }
 }
+// ----------------------------------------
 
 // EXPORTEREN 
 window.exportToCSV = function() {
     if(urenData.length === 0) { alert("Brak danych (Geen data)."); return; }
     let csvContent = "data:text/csv;charset=utf-8,Schilder,Datum,Uren,Adres,Omschrijving\n";
     urenData.forEach(row => {
-        // Gebruik de nieuwe formatName functie voor de Excel export
         const mooieNaam = sanitizeCSV(formatName(row.userEmail));
         const safeAdres = sanitizeCSV(row.adres).replace(/"/g, '""'); 
         const safeOmschrijving = sanitizeCSV(row.omschrijving).replace(/"/g, '""');
