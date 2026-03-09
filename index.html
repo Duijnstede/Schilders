@@ -17,12 +17,19 @@
     </div>
 
     <div id="app-screen" class="container hidden">
+        
         <div class="header">
             <div>
                 <h2 style="margin:0;">Cześć, <span id="user-display" style="color: #0056b3;"></span></h2>
                 <small id="current-date-display"></small>
             </div>
-            <button onclick="logout()" class="btn-outline">Wyloguj</button>
+            <div style="position: relative;">
+                <button onclick="toggleMenu(event)" class="menu-btn">⋮</button>
+                <div id="dropdown-menu" class="dropdown-content hidden">
+                    <button onclick="exportToCSV()" class="dropdown-item">📊 Exporteer CSV</button>
+                    <button onclick="logout()" class="dropdown-item" style="color: #dc3545;">🚪 Wyloguj</button>
+                </div>
+            </div>
         </div>
 
         <div class="tabs">
@@ -74,7 +81,6 @@
         </div>
 
         <div id="overview-tab" class="tab-content hidden">
-            <button onclick="exportToCSV()" class="btn-success mb-15">📊 Exporteer naar Excel (CSV)</button>
             <div id="uren-lijst">
                 </div>
         </div>
