@@ -15,7 +15,7 @@ const firebaseConfig = {
 };
 // --- ADMIN INSTELLING ---
 // Vul hier exact het e-mailadres in dat jij als beheerder gaat gebruiken!
-const ADMIN_EMAIL = "admin@schilders.nl"; 
+const ADMIN_EMAIL = "admin@duijnstede.nl"; 
 // ------------------------------------------------------------------------
 // Initialiseer Firebase
 const app = initializeApp(firebaseConfig);
