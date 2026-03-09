@@ -25,7 +25,16 @@ const db = getFirestore(app);
 let currentUser = null;
 let urenData = [];
 let editingId = null;
-let deleteIdPending = null; // Nieuw: Onthoudt welk uur we willen verwijderen
+let deleteIdPending = null; 
+
+// Woordenboek voor de app én Excel
+const poolseVertalingen = {
+    "Schilderwerkzaamheden": "Schilderwerkzaamheden (Prace malarskie)",
+    "Sloopwerkzaamheden": "Sloopwerkzaamheden (Prace rozbiórkowe)",
+    "Zieke dag": "Zieke dag (Dzień choroby)",
+    "Vrije dag": "Vrije dag (Dzień wolny)",
+    "Vakantie": "Vakantie (Wakacje)"
+};
 
 // --- BEVEILIGINGS FILTERS & HELPERS ---
 function sanitizeHTML(str) {
@@ -54,7 +63,7 @@ function formatName(email) {
 window.toggleMenu = function(event) {
     if(event) event.stopPropagation(); 
     const menu = document.getElementById('dropdown-menu');
-    menu.classList.toggle('hidden');
+    if(menu) menu.classList.toggle('hidden');
 }
 
 window.addEventListener('click', function(e) {
@@ -68,15 +77,18 @@ window.addEventListener('click', function(e) {
 window.showToast = function(message) {
     const toast = document.getElementById("toast");
     const toastMessage = document.getElementById("toast-message");
-    toastMessage.innerText = message;
-    toast.classList.add("show");
-    setTimeout(function(){ 
-        toast.classList.remove("show"); 
-    }, 3000); 
+    if(toast && toastMessage) {
+        toastMessage.innerText = message;
+        toast.classList.add("show");
+        setTimeout(function(){ 
+            toast.classList.remove("show"); 
+        }, 3000); 
+    }
 }
 
 // Datum weergave instellen
-document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+const dateDisplay = document.getElementById('current-date-display');
+if(dateDisplay) dateDisplay.innerText = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
 
 // "Andere" logica radiobuttons
 document.querySelectorAll('input[name="omschrijving"]').forEach(radio => {
@@ -151,12 +163,14 @@ window.toggleWeek = function(weekKey) {
     const content = document.getElementById(`content-${weekKey}`);
     const icon = document.getElementById(`icon-${weekKey}`);
     
-    if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        icon.style.transform = "rotate(0deg)";
-    } else {
-        content.classList.add('hidden');
-        icon.style.transform = "rotate(-90deg)";
+    if (content && icon) {
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.style.transform = "rotate(0deg)";
+        } else {
+            content.classList.add('hidden');
+            icon.style.transform = "rotate(-90deg)";
+        }
     }
 }
 
@@ -213,52 +227,55 @@ async function haalUrenOp() {
 }
 
 // FORMULIER VERZENDEN NAAR DATABASE
-document.getElementById('uren-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    document.getElementById('submit-btn').disabled = true; 
-    document.getElementById('submit-btn').innerText = "Zapisywanie...";
-    
-    const datumVal = document.getElementById('datum').value;
-    const dateObj = new Date(datumVal);
-    if (dateObj.getDay() === 0 || dateObj.getDay() === 6) {
-        alert("W weekend nie można rejestrować godzin. (Weekenduren worden niet geaccepteerd.)");
+const urenForm = document.getElementById('uren-form');
+if (urenForm) {
+    urenForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        document.getElementById('submit-btn').disabled = true; 
+        document.getElementById('submit-btn').innerText = "Zapisywanie...";
+        
+        const datumVal = document.getElementById('datum').value;
+        const dateObj = new Date(datumVal);
+        if (dateObj.getDay() === 0 || dateObj.getDay() === 6) {
+            alert("W weekend nie można rejestrować godzin. (Weekenduren worden niet geaccepteerd.)");
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('submit-btn').innerText = "Opslaan (Zapisz)";
+            return; 
+        }
+
+        let omschrijving = document.querySelector('input[name="omschrijving"]:checked').value;
+        if (omschrijving === 'Andere') omschrijving = document.getElementById('andere-tekst').value;
+
+        const invoerData = {
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            datum: datumVal,
+            uren: document.getElementById('uren').value,
+            adres: document.getElementById('adres').value, 
+            omschrijving: omschrijving, 
+            timestamp: Date.now()
+        };
+
+        try {
+            if (editingId) {
+                await updateDoc(doc(db, "uren", editingId), invoerData);
+                showToast("Pomyślnie zaktualizowano godziny! (Uren succesvol bijgewerkt!)");
+            } else {
+                await addDoc(collection(db, "uren"), invoerData);
+                showToast("Pomyślnie zapisano godziny! (Uren succesvol opgeslagen!)");
+            }
+            await haalUrenOp(); 
+            window.cancelEdit(); 
+            window.showTab('overview-tab');
+        } catch (error) {
+            console.error("Fout bij opslaan:", error);
+            alert("Błąd podczas zapisywania. (Er ging iets mis bij het opslaan.)");
+        }
+        
         document.getElementById('submit-btn').disabled = false;
         document.getElementById('submit-btn').innerText = "Opslaan (Zapisz)";
-        return; 
-    }
-
-    let omschrijving = document.querySelector('input[name="omschrijving"]:checked').value;
-    if (omschrijving === 'Andere') omschrijving = document.getElementById('andere-tekst').value;
-
-    const invoerData = {
-        userId: currentUser.uid,
-        userEmail: currentUser.email,
-        datum: datumVal,
-        uren: document.getElementById('uren').value,
-        adres: document.getElementById('adres').value, 
-        omschrijving: omschrijving, 
-        timestamp: Date.now()
-    };
-
-    try {
-        if (editingId) {
-            await updateDoc(doc(db, "uren", editingId), invoerData);
-            showToast("Pomyślnie zaktualizowano godziny! (Uren succesvol bijgewerkt!)");
-        } else {
-            await addDoc(collection(db, "uren"), invoerData);
-            showToast("Pomyślnie zapisano godziny! (Uren succesvol opgeslagen!)");
-        }
-        await haalUrenOp(); 
-        window.cancelEdit(); 
-        window.showTab('overview-tab');
-    } catch (error) {
-        console.error("Fout bij opslaan:", error);
-        alert("Błąd podczas zapisywania. (Er ging iets mis bij het opslaan.)");
-    }
-    
-    document.getElementById('submit-btn').disabled = false;
-    document.getElementById('submit-btn').innerText = "Opslaan (Zapisz)";
-});
+    });
+}
 
 // HELPER: ISO WEEK NUMMER
 function getWeekInfo(dateString) {
@@ -275,19 +292,12 @@ const dagenNamen = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vr
 // LIJST TONEN
 function renderLijst() {
     const lijst = document.getElementById('uren-lijst');
+    if (!lijst) return;
     lijst.innerHTML = '';
     
     if(urenData.length === 0) {
         lijst.innerHTML = '<div class="card"><p>Brak zarejestrowanych godzin. (Nog geen uren geregistreerd.)</p></div>'; return;
     }
-
-    const poolseVertalingen = {
-        "Schilderwerkzaamheden": "Schilderwerkzaamheden (Prace malarskie)",
-        "Sloopwerkzaamheden": "Sloopwerkzaamheden (Prace rozbiórkowe)",
-        "Zieke dag": "Zieke dag (Dzień choroby)",
-        "Vrije dag": "Vrije dag (Dzień wolny)",
-        "Vakantie": "Vakantie (Wakacje)"
-    };
 
     const grouped = {};
     urenData.forEach(item => {
@@ -409,26 +419,21 @@ window.cancelEdit = function() {
     document.getElementById('andere-tekst').classList.add('hidden');
 }
 
-
-// --- NIEUWE VERWIJDER POP-UP FUNCTIES ---
-
-// 1. Pop-up openen
+// --- VERWIJDER POP-UP FUNCTIES ---
 window.verwijderUren = function(id) {
-    deleteIdPending = id; // Sla op welk uur de gebruiker wil verwijderen
+    deleteIdPending = id; 
     document.getElementById('confirm-modal').classList.remove('hidden');
 }
 
-// 2. Pop-up sluiten (Annuleren)
 window.closeConfirmModal = function() {
     deleteIdPending = null;
     document.getElementById('confirm-modal').classList.add('hidden');
 }
 
-// 3. Definitief verwijderen
 window.executeDelete = async function() {
     if(!deleteIdPending) return;
     const id = deleteIdPending;
-    window.closeConfirmModal(); // Verberg de pop-up direct
+    window.closeConfirmModal(); 
 
     try {
         await deleteDoc(doc(db, "uren", id));
@@ -439,23 +444,50 @@ window.executeDelete = async function() {
         alert("Błąd podczas usuwania. (Fout bij verwijderen.)");
     }
 }
-// ----------------------------------------
 
-// EXPORTEREN 
-window.exportToCSV = function() {
+// --- NIEUW: EXPORTEREN NAAR ECHT EXCEL (.XLSX) ---
+window.exportToExcel = function() {
     if(urenData.length === 0) { alert("Brak danych (Geen data)."); return; }
-    let csvContent = "data:text/csv;charset=utf-8,Schilder,Datum,Uren,Adres,Omschrijving\n";
-    urenData.forEach(row => {
+    
+    const excelData = urenData.map(row => {
         const mooieNaam = sanitizeCSV(formatName(row.userEmail));
-        const safeAdres = sanitizeCSV(row.adres).replace(/"/g, '""'); 
-        const safeOmschrijving = sanitizeCSV(row.omschrijving).replace(/"/g, '""');
-        csvContent += `${mooieNaam},${row.datum},${row.uren},"${safeAdres}","${safeOmschrijving}"\n`;
+        
+        // Datum omdraaien van YYYY-MM-DD naar DD-MM-YYYY
+        let mooieDatum = row.datum;
+        if (mooieDatum) {
+            const parts = mooieDatum.split('-'); 
+            if (parts.length === 3) {
+                mooieDatum = `${parts[2]}-${parts[1]}-${parts[0]}`; 
+            }
+        }
+
+        // Poolse vertaling ophalen als die bestaat
+        let mooieOmschrijving = sanitizeCSV(row.omschrijving);
+        if (poolseVertalingen[row.omschrijving]) {
+            mooieOmschrijving = poolseVertalingen[row.omschrijving];
+        }
+
+        return {
+            "Schilder": mooieNaam,
+            "Datum": mooieDatum,
+            "Uren": parseFloat(row.uren),
+            "Adres": sanitizeCSV(row.adres),
+            "Omschrijving": mooieOmschrijving
+        };
     });
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "urenregistratie.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Uren");
+
+    // Kolombreedtes instellen
+    worksheet["!cols"] = [
+        { wch: 20 }, 
+        { wch: 15 }, 
+        { wch: 10 }, 
+        { wch: 30 }, 
+        { wch: 45 }  
+    ];
+
+    XLSX.writeFile(workbook, "Urenregistratie.xlsx");
 }
