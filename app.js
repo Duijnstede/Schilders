@@ -77,7 +77,7 @@ window.login = async function() {
     try {
         await signInWithEmailAndPassword(auth, email, pass);
     } catch (error) {
-        alert("Fout bij inloggen: Controleer e-mailadres en wachtwoord.");
+        alert("Błąd logowania: Sprawdź adres e-mail i hasło. (Fout bij inloggen)");
     }
 }
 
@@ -106,10 +106,10 @@ window.toggleWeek = function(weekKey) {
     
     if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
-        icon.style.transform = "rotate(0deg)"; // Pijltje omlaag
+        icon.style.transform = "rotate(0deg)";
     } else {
         content.classList.add('hidden');
-        icon.style.transform = "rotate(-90deg)"; // Pijltje opzij
+        icon.style.transform = "rotate(-90deg)";
     }
 }
 
@@ -162,14 +162,14 @@ async function haalUrenOp() {
 document.getElementById('uren-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     document.getElementById('submit-btn').disabled = true; 
-    document.getElementById('submit-btn').innerText = "Opslaan...";
+    document.getElementById('submit-btn').innerText = "Zapisywanie...";
     
     const datumVal = document.getElementById('datum').value;
     const dateObj = new Date(datumVal);
     if (dateObj.getDay() === 0 || dateObj.getDay() === 6) {
-        alert("Weekenduren worden niet geaccepteerd.");
+        alert("W weekend nie można rejestrować godzin. (Weekenduren worden niet geaccepteerd.)");
         document.getElementById('submit-btn').disabled = false;
-        document.getElementById('submit-btn').innerText = "Opslaan";
+        document.getElementById('submit-btn').innerText = "Opslaan (Zapisz)";
         return; 
     }
 
@@ -189,21 +189,21 @@ document.getElementById('uren-form').addEventListener('submit', async function(e
     try {
         if (editingId) {
             await updateDoc(doc(db, "uren", editingId), invoerData);
-            alert("Uren succesvol bijgewerkt!");
+            alert("Pomyślnie zaktualizowano godziny! (Uren succesvol bijgewerkt!)");
         } else {
             await addDoc(collection(db, "uren"), invoerData);
-            alert("Uren succesvol opgeslagen!");
+            alert("Pomyślnie zapisano godziny! (Uren succesvol opgeslagen!)");
         }
         await haalUrenOp(); 
         window.cancelEdit(); 
         window.showTab('overview-tab');
     } catch (error) {
         console.error("Fout bij opslaan:", error);
-        alert("Er ging iets mis bij het opslaan.");
+        alert("Błąd podczas zapisywania. (Er ging iets mis bij het opslaan.)");
     }
     
     document.getElementById('submit-btn').disabled = false;
-    document.getElementById('submit-btn').innerText = "Opslaan";
+    document.getElementById('submit-btn').innerText = "Opslaan (Zapisz)";
 });
 
 // HELPER: ISO WEEK NUMMER
@@ -218,14 +218,23 @@ function getWeekInfo(dateString) {
 
 const dagenNamen = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
 
-// LIJST TONEN (NU MET INKLAPFUNCTIE)
+// LIJST TONEN
 function renderLijst() {
     const lijst = document.getElementById('uren-lijst');
     lijst.innerHTML = '';
     
     if(urenData.length === 0) {
-        lijst.innerHTML = '<div class="card"><p>Nog geen uren geregistreerd.</p></div>'; return;
+        lijst.innerHTML = '<div class="card"><p>Brak zarejestrowanych godzin. (Nog geen uren geregistreerd.)</p></div>'; return;
     }
+
+    // WOORDENBOEK VOOR HET OVERZICHT
+    const poolseVertalingen = {
+        "Schilderwerkzaamheden": "Schilderwerkzaamheden (Prace malarskie)",
+        "Sloopwerkzaamheden": "Sloopwerkzaamheden (Prace rozbiórkowe)",
+        "Zieke dag": "Zieke dag (Dzień choroby)",
+        "Vrije dag": "Vrije dag (Dzień wolny)",
+        "Vakantie": "Vakantie (Wakacje)"
+    };
 
     const grouped = {};
     urenData.forEach(item => {
@@ -254,11 +263,9 @@ function renderLijst() {
             if(group.totals[i] > 0) totalsHTML += `<span class="day-stat">${dagenNamen[i]}: ${group.totals[i]}u</span>`;
         }
 
-        // Bepaal of deze map dichtgeklapt moet zijn (we houden alleen de allernieuwste week open, de rest dicht)
         const isHidden = index === 0 ? '' : 'hidden';
         const rotation = index === 0 ? '0deg' : '-90deg';
 
-        // Blauwe header is nu klikbaar (cursor: pointer toegevoegd)
         let html = `
             <div class="week-header" onclick="toggleWeek('${key}')" style="cursor: pointer; user-select: none;">
                 <h3 style="display: flex; align-items: center;">
@@ -276,20 +283,25 @@ function renderLijst() {
             const datumNL = new Date(item.datum).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
             
             const veiligAdres = sanitizeHTML(item.adres);
-            const veiligeOmschrijving = sanitizeHTML(item.omschrijving);
+            let veiligeOmschrijving = sanitizeHTML(item.omschrijving);
             const naamVoorAt = sanitizeHTML(item.userEmail.split('@')[0]);
+
+            // Voeg vertaling toe als die in het woordenboek staat (anders is het een custom "Andere" tekst)
+            if (poolseVertalingen[veiligeOmschrijving]) {
+                veiligeOmschrijving = poolseVertalingen[veiligeOmschrijving];
+            }
 
             html += `
                 <div class="uren-card">
                     <div class="uren-card-header">
                         <strong>${datumNL}</strong>
                         <div class="action-buttons">
-                            <button class="btn-icon" onclick="editUren('${item.id}')" title="Bewerken">✏️</button>
-                            <button class="btn-icon btn-delete" onclick="verwijderUren('${item.id}')" title="Verwijderen">🗑️</button>
+                            <button class="btn-icon" onclick="editUren('${item.id}')" title="Bewerken (Edytuj)">✏️</button>
+                            <button class="btn-icon btn-delete" onclick="verwijderUren('${item.id}')" title="Verwijderen (Usuń)">🗑️</button>
                         </div>
                     </div>
                     <div>
-                        <span class="badge">${item.uren} uur</span> - <strong>${veiligeOmschrijving}</strong><br>
+                        <span class="badge">${item.uren} uur (godz)</span> - <strong>${veiligeOmschrijving}</strong><br>
                         <span style="color: #6c757d; font-size: 14px;">📍 ${veiligAdres}</span><br>
                         <span style="color: #0056b3; font-size: 13px; font-weight: 600; margin-top: 5px; display: inline-block;">👤 ${naamVoorAt}</span>
                     </div>
@@ -297,7 +309,7 @@ function renderLijst() {
             `;
         });
         
-        html += `</div>`; // Sluit de inklapbare div af
+        html += `</div>`; 
         
         weekDiv.innerHTML = html;
         lijst.appendChild(weekDiv);
@@ -310,7 +322,7 @@ window.editUren = function(id) {
     if(!item) return;
     
     editingId = id;
-    document.getElementById('form-title').innerText = "Uren bewerken";
+    document.getElementById('form-title').innerText = "Uren bewerken (Edytuj godziny)";
     document.getElementById('datum').value = item.datum;
     document.getElementById('uren').value = item.uren;
     document.getElementById('adres').value = item.adres;
@@ -329,7 +341,7 @@ window.editUren = function(id) {
         document.getElementById('andere-tekst').classList.remove('hidden');
     }
 
-    document.getElementById('submit-btn').innerText = "Opslaan (Bewerken)";
+    document.getElementById('submit-btn').innerText = "Opslaan (Zapisz)";
     document.getElementById('cancel-edit-btn').classList.remove('hidden');
     
     window.showTab('form-tab');
@@ -339,28 +351,28 @@ window.editUren = function(id) {
 window.cancelEdit = function() {
     editingId = null;
     document.getElementById('uren-form').reset();
-    document.getElementById('form-title').innerText = "Uren invullen";
-    document.getElementById('submit-btn').innerText = "Opslaan";
+    document.getElementById('form-title').innerText = "Uren invullen (Wprowadź godziny)";
+    document.getElementById('submit-btn').innerText = "Opslaan (Zapisz)";
     document.getElementById('cancel-edit-btn').classList.add('hidden');
     document.getElementById('andere-tekst').classList.add('hidden');
 }
 
 // VERWIJDEREN
 window.verwijderUren = async function(id) {
-    if(confirm("Weet je zeker dat je deze uren wilt verwijderen?")) {
+    if(confirm("Czy na pewno chcesz usunąć te godziny? (Weet je zeker dat je deze uren wilt verwijderen?)")) {
         try {
             await deleteDoc(doc(db, "uren", id));
             await haalUrenOp();
             if(editingId === id) window.cancelEdit();
         } catch (error) {
-            alert("Fout bij verwijderen.");
+            alert("Fout bij verwijderen. (Błąd podczas usuwania.)");
         }
     }
 }
 
 // EXPORTEREN 
 window.exportToCSV = function() {
-    if(urenData.length === 0) { alert("Geen data."); return; }
+    if(urenData.length === 0) { alert("Brak danych (Geen data)."); return; }
     let csvContent = "data:text/csv;charset=utf-8,Schilder,Datum,Uren,Adres,Omschrijving\n";
     urenData.forEach(row => {
         const safeAdres = sanitizeCSV(row.adres).replace(/"/g, '""'); 
