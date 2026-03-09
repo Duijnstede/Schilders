@@ -14,7 +14,6 @@ const firebaseConfig = {
   appId: "1:885772883499:web:bb21bcbf9854ff8cdc3c6e"
 };
 // ------------------------------------------------------------------------
-
 // Initialiseer Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -25,7 +24,6 @@ let urenData = [];
 let editingId = null;
 
 // --- BEVEILIGINGS FILTERS ---
-// Filter 1: Maakt HTML code onschadelijk (tegen XSS)
 function sanitizeHTML(str) {
     if (!str) return '';
     return str.replace(/[&<>'"]/g, tag => ({
@@ -33,11 +31,10 @@ function sanitizeHTML(str) {
     }[tag] || tag));
 }
 
-// Filter 2: Maakt Excel formules onschadelijk (tegen CSV Injection)
 function sanitizeCSV(str) {
     if (!str) return '';
     if (str.match(/^[=\+\-@\t\r\n]/)) {
-        return "'" + str; // Zet er een aanhalingsteken voor zodat Excel het als tekst ziet
+        return "'" + str; 
     }
     return str;
 }
@@ -100,6 +97,20 @@ window.showTab = function(tabId) {
     
     if(tabId === 'form-tab') document.getElementById('tab-btn-form').classList.add('active');
     if(tabId === 'overview-tab') document.getElementById('tab-btn-overview').classList.add('active');
+}
+
+// IN- EN UITKLAPPEN VAN WEKEN
+window.toggleWeek = function(weekKey) {
+    const content = document.getElementById(`content-${weekKey}`);
+    const icon = document.getElementById(`icon-${weekKey}`);
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = "rotate(0deg)"; // Pijltje omlaag
+    } else {
+        content.classList.add('hidden');
+        icon.style.transform = "rotate(-90deg)"; // Pijltje opzij
+    }
 }
 
 // CONTROLEER WEEKEND
@@ -170,8 +181,8 @@ document.getElementById('uren-form').addEventListener('submit', async function(e
         userEmail: currentUser.email,
         datum: datumVal,
         uren: document.getElementById('uren').value,
-        adres: document.getElementById('adres').value, // Onbewerkte versie opslaan in DB
-        omschrijving: omschrijving, // Onbewerkte versie opslaan in DB
+        adres: document.getElementById('adres').value, 
+        omschrijving: omschrijving, 
         timestamp: Date.now()
     };
 
@@ -207,7 +218,7 @@ function getWeekInfo(dateString) {
 
 const dagenNamen = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
 
-// LIJST TONEN (MET VEILIGHEIDSFILTERS)
+// LIJST TONEN (NU MET INKLAPFUNCTIE)
 function renderLijst() {
     const lijst = document.getElementById('uren-lijst');
     lijst.innerHTML = '';
@@ -229,7 +240,7 @@ function renderLijst() {
         }
     });
 
-    Object.keys(grouped).sort().reverse().forEach(key => {
+    Object.keys(grouped).sort().reverse().forEach((key, index) => {
         const weekNum = key.split('-W')[1];
         const group = grouped[key];
         
@@ -243,18 +254,27 @@ function renderLijst() {
             if(group.totals[i] > 0) totalsHTML += `<span class="day-stat">${dagenNamen[i]}: ${group.totals[i]}u</span>`;
         }
 
+        // Bepaal of deze map dichtgeklapt moet zijn (we houden alleen de allernieuwste week open, de rest dicht)
+        const isHidden = index === 0 ? '' : 'hidden';
+        const rotation = index === 0 ? '0deg' : '-90deg';
+
+        // Blauwe header is nu klikbaar (cursor: pointer toegevoegd)
         let html = `
-            <div class="week-header">
-                <h3>Week ${weekNum}</h3>
+            <div class="week-header" onclick="toggleWeek('${key}')" style="cursor: pointer; user-select: none;">
+                <h3 style="display: flex; align-items: center;">
+                    <span id="icon-${key}" style="font-size: 14px; margin-right: 8px; transition: transform 0.2s; transform: rotate(${rotation});">▼</span> 
+                    Week ${weekNum}
+                </h3>
                 <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">Totaal: ${group.items.reduce((sum, i) => sum + parseFloat(i.uren), 0)} uur</span>
             </div>
-            <div class="week-summary">${totalsHTML}</div>
+            
+            <div id="content-${key}" class="${isHidden}">
+                <div class="week-summary">${totalsHTML}</div>
         `;
 
         group.items.forEach(item => {
             const datumNL = new Date(item.datum).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
             
-            // Toepassen van de veiligheidsfilter op de velden die door gebruikers zijn ingevuld!
             const veiligAdres = sanitizeHTML(item.adres);
             const veiligeOmschrijving = sanitizeHTML(item.omschrijving);
             const naamVoorAt = sanitizeHTML(item.userEmail.split('@')[0]);
@@ -276,6 +296,8 @@ function renderLijst() {
                 </div>
             `;
         });
+        
+        html += `</div>`; // Sluit de inklapbare div af
         
         weekDiv.innerHTML = html;
         lijst.appendChild(weekDiv);
@@ -336,15 +358,13 @@ window.verwijderUren = async function(id) {
     }
 }
 
-// EXPORTEREN (MET VEILIGHEIDSFILTERS)
+// EXPORTEREN 
 window.exportToCSV = function() {
     if(urenData.length === 0) { alert("Geen data."); return; }
     let csvContent = "data:text/csv;charset=utf-8,Schilder,Datum,Uren,Adres,Omschrijving\n";
     urenData.forEach(row => {
-        // Toepassen van de veiligheidsfilter op de export data!
-        const safeAdres = sanitizeCSV(row.adres).replace(/"/g, '""'); // Zorgt ook dat dubbele aanhalingstekens de CSV niet breken
+        const safeAdres = sanitizeCSV(row.adres).replace(/"/g, '""'); 
         const safeOmschrijving = sanitizeCSV(row.omschrijving).replace(/"/g, '""');
-        
         csvContent += `${row.userEmail},${row.datum},${row.uren},"${safeAdres}","${safeOmschrijving}"\n`;
     });
     const encodedUri = encodeURI(csvContent);
