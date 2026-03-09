@@ -4,7 +4,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from
 import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // ------------------------------------------------------------------------
-// PLAK JOUW GEKOPIEERDE FIREBASE CONFIG HIERONDER (Vervang dit hele blokje met jouw gegevens)
+// PLAK JOUW GEKOPIEERDE FIREBASE CONFIG HIERONDER
 const firebaseConfig = {
   apiKey: "AIzaSyC0eTtQOX50MqEHo5D0B5-yBPiAfrX3Lyk",
   authDomain: "urenregistratie-schilders.firebaseapp.com",
@@ -15,7 +15,7 @@ const firebaseConfig = {
 };
 // ------------------------------------------------------------------------
 
-// 2. Initialiseer Firebase (Start de motor)
+// Initialiseer Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -23,6 +23,25 @@ const db = getFirestore(app);
 let currentUser = null;
 let urenData = [];
 let editingId = null;
+
+// --- BEVEILIGINGS FILTERS ---
+// Filter 1: Maakt HTML code onschadelijk (tegen XSS)
+function sanitizeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[tag] || tag));
+}
+
+// Filter 2: Maakt Excel formules onschadelijk (tegen CSV Injection)
+function sanitizeCSV(str) {
+    if (!str) return '';
+    if (str.match(/^[=\+\-@\t\r\n]/)) {
+        return "'" + str; // Zet er een aanhalingsteken voor zodat Excel het als tekst ziet
+    }
+    return str;
+}
+// ----------------------------
 
 // Datum weergave instellen
 document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -39,14 +58,14 @@ document.querySelectorAll('input[name="omschrijving"]').forEach(radio => {
     });
 });
 
-// CHECK OF IEMAND IS INGELOGD (Firebase luisteraar)
+// CHECK OF IEMAND IS INGELOGD
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
-        document.getElementById('user-display').innerText = user.email.split('@')[0]; // Toont naam voor het @ teken
-        haalUrenOp(); // Haal uren uit database
+        document.getElementById('user-display').innerText = sanitizeHTML(user.email.split('@')[0]);
+        haalUrenOp(); 
     } else {
         currentUser = null;
         document.getElementById('login-screen').classList.remove('hidden');
@@ -83,7 +102,7 @@ window.showTab = function(tabId) {
     if(tabId === 'overview-tab') document.getElementById('tab-btn-overview').classList.add('active');
 }
 
-// CONTROLEER WEEKEND (Visueel)
+// CONTROLEER WEEKEND
 window.checkDatum = function() {
     const datumVal = document.getElementById('datum').value;
     if (!datumVal) return;
@@ -97,7 +116,7 @@ window.checkDatum = function() {
     }
 }
 
-// CONTROLEER MAX 8 UUR PER DAG
+// CONTROLEER MAX 8 UUR
 window.checkUren = function() {
     const datum = document.getElementById('datum').value;
     const nieuweUren = parseFloat(document.getElementById('uren').value) || 0;
@@ -151,8 +170,8 @@ document.getElementById('uren-form').addEventListener('submit', async function(e
         userEmail: currentUser.email,
         datum: datumVal,
         uren: document.getElementById('uren').value,
-        adres: document.getElementById('adres').value,
-        omschrijving: omschrijving,
+        adres: document.getElementById('adres').value, // Onbewerkte versie opslaan in DB
+        omschrijving: omschrijving, // Onbewerkte versie opslaan in DB
         timestamp: Date.now()
     };
 
@@ -164,7 +183,7 @@ document.getElementById('uren-form').addEventListener('submit', async function(e
             await addDoc(collection(db, "uren"), invoerData);
             alert("Uren succesvol opgeslagen!");
         }
-        await haalUrenOp(); // Ververs lijst
+        await haalUrenOp(); 
         window.cancelEdit(); 
         window.showTab('overview-tab');
     } catch (error) {
@@ -188,7 +207,7 @@ function getWeekInfo(dateString) {
 
 const dagenNamen = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
 
-// LIJST TONEN
+// LIJST TONEN (MET VEILIGHEIDSFILTERS)
 function renderLijst() {
     const lijst = document.getElementById('uren-lijst');
     lijst.innerHTML = '';
@@ -234,7 +253,12 @@ function renderLijst() {
 
         group.items.forEach(item => {
             const datumNL = new Date(item.datum).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
-            const naamVoorAt = item.userEmail.split('@')[0];
+            
+            // Toepassen van de veiligheidsfilter op de velden die door gebruikers zijn ingevuld!
+            const veiligAdres = sanitizeHTML(item.adres);
+            const veiligeOmschrijving = sanitizeHTML(item.omschrijving);
+            const naamVoorAt = sanitizeHTML(item.userEmail.split('@')[0]);
+
             html += `
                 <div class="uren-card">
                     <div class="uren-card-header">
@@ -245,8 +269,8 @@ function renderLijst() {
                         </div>
                     </div>
                     <div>
-                        <span class="badge">${item.uren} uur</span> - <strong>${item.omschrijving}</strong><br>
-                        <span style="color: #6c757d; font-size: 14px;">📍 ${item.adres}</span><br>
+                        <span class="badge">${item.uren} uur</span> - <strong>${veiligeOmschrijving}</strong><br>
+                        <span style="color: #6c757d; font-size: 14px;">📍 ${veiligAdres}</span><br>
                         <span style="color: #0056b3; font-size: 13px; font-weight: 600; margin-top: 5px; display: inline-block;">👤 ${naamVoorAt}</span>
                     </div>
                 </div>
@@ -299,7 +323,7 @@ window.cancelEdit = function() {
     document.getElementById('andere-tekst').classList.add('hidden');
 }
 
-// VERWIJDEREN UIT DATABASE
+// VERWIJDEREN
 window.verwijderUren = async function(id) {
     if(confirm("Weet je zeker dat je deze uren wilt verwijderen?")) {
         try {
@@ -312,12 +336,16 @@ window.verwijderUren = async function(id) {
     }
 }
 
-// EXPORTEREN
+// EXPORTEREN (MET VEILIGHEIDSFILTERS)
 window.exportToCSV = function() {
     if(urenData.length === 0) { alert("Geen data."); return; }
     let csvContent = "data:text/csv;charset=utf-8,Schilder,Datum,Uren,Adres,Omschrijving\n";
     urenData.forEach(row => {
-        csvContent += `${row.userEmail},${row.datum},${row.uren},"${row.adres}","${row.omschrijving}"\n`;
+        // Toepassen van de veiligheidsfilter op de export data!
+        const safeAdres = sanitizeCSV(row.adres).replace(/"/g, '""'); // Zorgt ook dat dubbele aanhalingstekens de CSV niet breken
+        const safeOmschrijving = sanitizeCSV(row.omschrijving).replace(/"/g, '""');
+        
+        csvContent += `${row.userEmail},${row.datum},${row.uren},"${safeAdres}","${safeOmschrijving}"\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
