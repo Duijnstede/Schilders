@@ -44,9 +44,23 @@ body {
     text-align: center;
     margin-top: 50px;
 }
+
+/* Aangepast: Een vlak voor de logo-afbeelding */
 .logo-area {
-    font-size: 50px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80px; /* Zorgt voor stabiliteit tijdens laden */
+}
+
+/* Nieuw: Stijl voor de logo-afbeelding zelf */
+.login-logo {
+    max-width: 200px;   /* Breedte beperken zodat het mooi op het kaartje past */
+    max-height: 100px;  /* Hoogte beperken */
+    height: auto;       /* Hoogte-breedte verhouding behouden */
+    width: auto;
+    object-fit: contain; /* Zorgt dat de hele afbeelding zichtbaar blijft */
 }
 
 /* --- HEADER --- */
@@ -161,6 +175,13 @@ button {
 }
 .btn-outline:hover {
     background: #f8fafc;
+}
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+.btn-danger:hover {
+    background: #c82333;
 }
 .btn-success {
     background: var(--success);
@@ -301,6 +322,26 @@ button {
 }
 .dropdown-item:hover {
     background-color: #f8fafc;
+}
+
+/* --- MODAL (CUSTOM BEVESTIGINGS POP-UP) --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal-card {
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 350px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
 /* --- SUCCES MELDING (TOAST) --- */
