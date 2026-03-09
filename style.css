@@ -1,74 +1,49 @@
-:root {
-    --primary: #0056b3;
-    --primary-hover: #004494;
-    --bg-color: #f0f4f8;
-    --card-bg: #ffffff;
-    --text-main: #333333;
-    --text-muted: #6c757d;
-    --danger: #dc3545;
-    --success: #28a745;
-    --border: #e2e8f0;
+/* --- DROP-DOWN MENU STYLES --- */
+.menu-btn {
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 28px;
+    font-weight: bold;
+    border: none;
+    padding: 0px 15px;
+    width: auto;
+    cursor: pointer;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-
-* { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-body { background-color: var(--bg-color); margin: 0; padding: 20px; color: var(--text-main); line-height: 1.5; }
-
-.container { max-width: 600px; margin: 0 auto; }
-.login-container { background: var(--card-bg); padding: 40px 20px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.05); text-align: center; margin-top: 10vh; }
-.logo-area { font-size: 48px; margin-bottom: 10px; }
-
-.hidden { display: none !important; }
-.mb-15 { margin-bottom: 15px; }
-
-/* Typografie & Header */
-h2, h3 { color: var(--primary); margin-top: 0; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-
-/* Tabs */
-.tabs { display: flex; margin-bottom: 20px; background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-.tab-btn { flex: 1; background: transparent; color: var(--text-muted); border: none; padding: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; font-size: 15px; }
-.tab-btn.active { background: var(--primary); color: white; }
-
-/* Cards & Formulieren */
-.card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-.form-group { margin-bottom: 22px; }
-.form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
-.radio-group label, .check-group label { font-weight: normal; display: flex; align-items: center; margin-top: 8px; padding: 10px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: 0.2s; }
-.radio-group label:hover { background: #eef2f6; }
-input[type="radio"] { margin-right: 12px; width: 18px; height: 18px; accent-color: var(--primary); }
-
-input[type="text"], input[type="password"], input[type="number"], input[type="date"] {
-    width: 100%; padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; transition: 0.3s; background: #f8fafc;
+.menu-btn:hover {
+    background: #eef2f6;
+    color: var(--primary);
 }
-input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(0,86,179,0.1); }
-
-/* Knoppen */
-button { padding: 14px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; width: 100%; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
-button:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-primary { background-color: var(--primary); color: white; }
-.btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); }
-.btn-success { background-color: var(--success); color: white; }
-.btn-success:hover { background-color: #218838; }
-.btn-outline { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); width: auto; padding: 8px 16px; font-size: 14px; }
-.btn-outline:hover { background-color: var(--primary); color: white; }
-.form-actions { display: flex; gap: 10px; }
-
-.error { color: var(--danger); font-size: 13px; margin-top: 6px; display: block; font-weight: 500; }
-
-/* Overzicht Styles (Weken & Dagen) */
-.week-container { margin-bottom: 30px; }
-.week-header { background: var(--primary); color: white; padding: 12px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
-.week-header h3 { margin: 0; color: white; font-size: 16px; }
-.week-summary { background: white; padding: 15px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 15px; font-size: 14px; }
-.day-stat { background: #eef2f6; padding: 5px 10px; border-radius: 6px; font-weight: 600; color: var(--primary); }
-
-.uren-card { border: 1px solid var(--border); border-top: none; padding: 15px 20px; background: #ffffff; display: flex; flex-direction: column; position: relative; }
-.uren-card:last-child { border-radius: 0 0 8px 8px; border-bottom: 1px solid var(--border); }
-.uren-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 10px; margin-bottom: 10px; }
-.uren-card-header strong { font-size: 16px; }
-.badge { background: #e2e8f0; color: #475569; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-
-.action-buttons { display: flex; gap: 8px; }
-.btn-icon { width: 32px; height: 32px; padding: 0; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; background: #f1f5f9; color: #333; border: 1px solid var(--border); }
-.btn-icon:hover { background: #e2e8f0; }
-.btn-delete:hover { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
+.dropdown-content {
+    position: absolute;
+    right: 0;
+    top: 45px;
+    background-color: white;
+    min-width: 200px;
+    box-shadow: 0px 10px 25px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    z-index: 100;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.dropdown-item {
+    background: none;
+    color: var(--text-main);
+    padding: 14px 20px;
+    text-align: left;
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    justify-content: flex-start;
+}
+.dropdown-item:hover {
+    background-color: #f8fafc;
+}
