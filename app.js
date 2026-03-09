@@ -15,7 +15,7 @@ const firebaseConfig = {
 };
 // --- ADMIN INSTELLING ---
 // Vul hier exact het e-mailadres in dat jij als beheerder gaat gebruiken!
-const ADMIN_EMAIL = "admin@damian.nl"; 
+const ADMIN_EMAIL = "admin@schilders.nl"; 
 // ------------------------------------------------------------------------
 
 // Initialiseer Firebase
@@ -27,7 +27,7 @@ let currentUser = null;
 let urenData = [];
 let editingId = null;
 
-// --- BEVEILIGINGS FILTERS ---
+// --- BEVEILIGINGS FILTERS & HELPERS ---
 function sanitizeHTML(str) {
     if (!str) return '';
     return str.replace(/[&<>'"]/g, tag => ({
@@ -41,6 +41,13 @@ function sanitizeCSV(str) {
         return "'" + str; 
     }
     return str;
+}
+
+// Nieuwe functie: Maakt van een e-mail (louis.jansen@...) een mooie naam (Louis Jansen)
+function formatName(email) {
+    if (!email) return '';
+    let namePart = email.split('@')[0];
+    return namePart.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 // ----------------------------
 
@@ -57,6 +64,17 @@ window.addEventListener('click', function(e) {
         menu.classList.add('hidden');
     }
 });
+
+// --- TOAST MELDING FUNCTIE ---
+window.showToast = function(message) {
+    const toast = document.getElementById("toast");
+    const toastMessage = document.getElementById("toast-message");
+    toastMessage.innerText = message;
+    toast.classList.add("show");
+    setTimeout(function(){ 
+        toast.classList.remove("show"); 
+    }, 3000); // Verdwijnt automatisch na 3 seconden
+}
 
 // Datum weergave instellen
 document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -79,13 +97,14 @@ onAuthStateChanged(auth, (user) => {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
-        document.getElementById('user-display').innerText = sanitizeHTML(user.email.split('@')[0]);
         
-        // Is de ingelogde gebruiker de admin?
+        // Gebruik de nieuwe formatName functie voor de begroeting
+        document.getElementById('user-display').innerText = sanitizeHTML(formatName(user.email));
+        
         if (user.email === ADMIN_EMAIL) {
-            document.getElementById('tab-btn-form').classList.add('hidden'); // Verberg het invul-formulier
+            document.getElementById('tab-btn-form').classList.add('hidden'); 
             document.getElementById('tab-btn-overview').innerText = "📅 Alle Uren van Schilders (Admin)";
-            window.showTab('overview-tab'); // Forceer naar overzicht
+            window.showTab('overview-tab'); 
         } else {
             document.getElementById('tab-btn-form').classList.remove('hidden');
             document.getElementById('tab-btn-overview').innerText = "📅 Mijn Overzicht (Mój przegląd)";
@@ -176,17 +195,15 @@ window.checkUren = function() {
     }
 }
 
-// DATABASE: UREN OPHALEN (MET ADMIN CHECK)
+// DATABASE: UREN OPHALEN
 async function haalUrenOp() {
     if (!currentUser) return;
     urenData = [];
     
     let q;
-    // Als de admin inlogt, halen we álle gegevens uit de database
     if (currentUser.email === ADMIN_EMAIL) {
         q = query(collection(db, "uren"));
     } else {
-        // Als een schilder inlogt, halen we alleen zijn EIGEN uren op
         q = query(collection(db, "uren"), where("userId", "==", currentUser.uid));
     }
 
@@ -228,10 +245,10 @@ document.getElementById('uren-form').addEventListener('submit', async function(e
     try {
         if (editingId) {
             await updateDoc(doc(db, "uren", editingId), invoerData);
-            alert("Pomyślnie zaktualizowano godziny! (Uren succesvol bijgewerkt!)");
+            showToast("Pomyślnie zaktualizowano godziny! (Uren succesvol bijgewerkt!)");
         } else {
             await addDoc(collection(db, "uren"), invoerData);
-            alert("Pomyślnie zapisano godziny! (Uren succesvol opgeslagen!)");
+            showToast("Pomyślnie zapisano godziny! (Uren succesvol opgeslagen!)");
         }
         await haalUrenOp(); 
         window.cancelEdit(); 
@@ -322,7 +339,9 @@ function renderLijst() {
             
             const veiligAdres = sanitizeHTML(item.adres);
             let veiligeOmschrijving = sanitizeHTML(item.omschrijving);
-            const naamVoorAt = sanitizeHTML(item.userEmail.split('@')[0]);
+            
+            // Gebruik de nieuwe formatName functie voor de kaartjes
+            const mooieNaam = sanitizeHTML(formatName(item.userEmail));
 
             if (poolseVertalingen[veiligeOmschrijving]) {
                 veiligeOmschrijving = poolseVertalingen[veiligeOmschrijving];
@@ -340,7 +359,7 @@ function renderLijst() {
                     <div>
                         <span class="badge">${item.uren} uur (godz)</span> - <strong>${veiligeOmschrijving}</strong><br>
                         <span style="color: #6c757d; font-size: 14px;">📍 ${veiligAdres}</span><br>
-                        <span style="color: #0056b3; font-size: 13px; font-weight: 600; margin-top: 5px; display: inline-block;">👤 ${naamVoorAt}</span>
+                        <span style="color: #0056b3; font-size: 13px; font-weight: 600; margin-top: 5px; display: inline-block;">👤 ${mooieNaam}</span>
                     </div>
                 </div>
             `;
@@ -412,9 +431,11 @@ window.exportToCSV = function() {
     if(urenData.length === 0) { alert("Brak danych (Geen data)."); return; }
     let csvContent = "data:text/csv;charset=utf-8,Schilder,Datum,Uren,Adres,Omschrijving\n";
     urenData.forEach(row => {
+        // Gebruik de nieuwe formatName functie voor de Excel export
+        const mooieNaam = sanitizeCSV(formatName(row.userEmail));
         const safeAdres = sanitizeCSV(row.adres).replace(/"/g, '""'); 
         const safeOmschrijving = sanitizeCSV(row.omschrijving).replace(/"/g, '""');
-        csvContent += `${row.userEmail},${row.datum},${row.uren},"${safeAdres}","${safeOmschrijving}"\n`;
+        csvContent += `${mooieNaam},${row.datum},${row.uren},"${safeAdres}","${safeOmschrijving}"\n`;
     });
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
