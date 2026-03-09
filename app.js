@@ -13,7 +13,11 @@ const firebaseConfig = {
   messagingSenderId: "885772883499",
   appId: "1:885772883499:web:bb21bcbf9854ff8cdc3c6e"
 };
+// --- ADMIN INSTELLING ---
+// Vul hier exact het e-mailadres in dat jij als beheerder gaat gebruiken!
+const ADMIN_EMAIL = "admin@damian.nl"; 
 // ------------------------------------------------------------------------
+
 // Initialiseer Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -40,6 +44,20 @@ function sanitizeCSV(str) {
 }
 // ----------------------------
 
+// --- MENU IN/UITKLAPPEN ---
+window.toggleMenu = function(event) {
+    if(event) event.stopPropagation(); 
+    const menu = document.getElementById('dropdown-menu');
+    menu.classList.toggle('hidden');
+}
+
+window.addEventListener('click', function(e) {
+    const menu = document.getElementById('dropdown-menu');
+    if (menu && !e.target.matches('.menu-btn')) {
+        menu.classList.add('hidden');
+    }
+});
+
 // Datum weergave instellen
 document.getElementById('current-date-display').innerText = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -55,13 +73,25 @@ document.querySelectorAll('input[name="omschrijving"]').forEach(radio => {
     });
 });
 
-// CHECK OF IEMAND IS INGELOGD
+// CHECK OF IEMAND IS INGELOGD (MET ADMIN CHECK)
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
         document.getElementById('user-display').innerText = sanitizeHTML(user.email.split('@')[0]);
+        
+        // Is de ingelogde gebruiker de admin?
+        if (user.email === ADMIN_EMAIL) {
+            document.getElementById('tab-btn-form').classList.add('hidden'); // Verberg het invul-formulier
+            document.getElementById('tab-btn-overview').innerText = "📅 Alle Uren van Schilders (Admin)";
+            window.showTab('overview-tab'); // Forceer naar overzicht
+        } else {
+            document.getElementById('tab-btn-form').classList.remove('hidden');
+            document.getElementById('tab-btn-overview').innerText = "📅 Mijn Overzicht (Mój przegląd)";
+            window.showTab('form-tab');
+        }
+        
         haalUrenOp(); 
     } else {
         currentUser = null;
@@ -146,11 +176,20 @@ window.checkUren = function() {
     }
 }
 
-// DATABASE: UREN OPHALEN
+// DATABASE: UREN OPHALEN (MET ADMIN CHECK)
 async function haalUrenOp() {
     if (!currentUser) return;
     urenData = [];
-    const q = query(collection(db, "uren"), where("userId", "==", currentUser.uid));
+    
+    let q;
+    // Als de admin inlogt, halen we álle gegevens uit de database
+    if (currentUser.email === ADMIN_EMAIL) {
+        q = query(collection(db, "uren"));
+    } else {
+        // Als een schilder inlogt, halen we alleen zijn EIGEN uren op
+        q = query(collection(db, "uren"), where("userId", "==", currentUser.uid));
+    }
+
     const querySnapshot = await getDocs(q);
     querySnapshot.forEach((doc) => {
         urenData.push({ id: doc.id, ...doc.data() });
@@ -227,7 +266,6 @@ function renderLijst() {
         lijst.innerHTML = '<div class="card"><p>Brak zarejestrowanych godzin. (Nog geen uren geregistreerd.)</p></div>'; return;
     }
 
-    // WOORDENBOEK VOOR HET OVERZICHT
     const poolseVertalingen = {
         "Schilderwerkzaamheden": "Schilderwerkzaamheden (Prace malarskie)",
         "Sloopwerkzaamheden": "Sloopwerkzaamheden (Prace rozbiórkowe)",
@@ -286,7 +324,6 @@ function renderLijst() {
             let veiligeOmschrijving = sanitizeHTML(item.omschrijving);
             const naamVoorAt = sanitizeHTML(item.userEmail.split('@')[0]);
 
-            // Voeg vertaling toe als die in het woordenboek staat (anders is het een custom "Andere" tekst)
             if (poolseVertalingen[veiligeOmschrijving]) {
                 veiligeOmschrijving = poolseVertalingen[veiligeOmschrijving];
             }
